@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Test</title>
+<style>
+
+  html, body{ height: 100%; width:100%; margin: 0; padding:0;}
+
+  body {
+    font-family: Arial, sans-serif;
+    align-items: center;
+  }
+
+  #testArea {
+    padding:50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body {
+    background-color: rgb(28, 43, 43);
+  }
+
+  body, #wordsContainer, #inputField, #timer{
+    color:lightgray;
+  }
+
+  #wordsContainer, #inputField, #timer, .resContainer{
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 30px;
+    background-color: rgba(0,0,0,0.25);
+  }
+
+
+  #inputField {
+    width: 100%;
+  }
+  #timer {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    opacity: 0.25;
+  }
+
+  #wordsContainer {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    white-space: pre-wrap; /* Keeps the line breaks */
+    border-radius: 10px;
+    height: 150px;
+    overflow: auto;
+  }
+
+  /* Word styles */
+  .word {
+    padding: 5px;
+    margin: 2px;
+    float:left;
+    font-size: 30px;
+  }
+  .current {
+    background-color: rgba(0,0,0,0.75);
+    border-radius: 10px;
+  }
+  .done {
+    text-decoration: line-through;
+    color: #777;
+  }
+  .current.wrong {
+    background-color: rgba(153, 21, 21, 0.432); /* Add a red border for incorrect input */
+  }
+  .done.wrong {
+    color: rgb(54, 33, 33); /* Add a red border for incorrect input */
+  }
+
+
+  /* Resault styles */
+
+  #resault{
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  .resContainer .resRow {
+    /*width: 100%;*/
+    padding: 10px;
+  }  
+  
+  .resContainer .resRow div{
+    width: 50%;
+    display: inline-block;
+    
+  }
+
+  .resContainer .resRow:nth-child(2n) {
+    background-color: rgba(0,0,0,0.25);
+  }
+
+  .resTitle {
+    width: 20%;
+    opacity: 0.5;
+  }
+  .resValue {
+    width: 60%;
+  }
+
+  /* Scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 20px;
+    height: 10px;
+    background: transparent;
+
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 15px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 15px;
+    box-shadow: inset 0 0 5px grey;
+    opacity: 0.1;
+  }
+
+
+</style>
+</head>
+<body>
+  <div id="testArea">
+    <div id="wordsContainer">
+      <!-- The text to be typed goes here -->
+      nichts ich sehr wer einen soll wurden dieses hatten einem welches so mir es schon des gemacht Seite würde wie
+    </div>
+    <input type="text" id="inputField" >
+    <div id="timer">
+      Time: <span id="timeElapsed">0:00</span>
+    </div>
+    <div id="resault"></div>
+</div>
+<script>
+
+  let words = "gar|werde|Menschen|des|sei|uns|damit|kann|weil|hier|dies|der|zum|also|über|dessen|doch|mein|von|lassen|vielleicht|meiner|Jahre|zu|welche|können|einen|müssen|ihn|muss|ganzen|seiner|auf|wurde|dem|Welt|in|beiden|Zeit|erst|wieder|werden|gemacht|da|allen|sagen|ganze|ob|nur|vor|lange|und|wollen|einmal|konnte|sehr|für|wohl|dann|wurden|jetzt|aus|gegen|eben|wir|ganz|diesem|soll|ich|als|einzelnen|ihr|seinem|keine|so|anderen|eine|bald|hatten|an|ihrem|allein|du|eines|ihren|was|nichts|wo|habe|vom|euch|ein|sie|wenn|sind|diesen|seine|unter|auch|er|würde|darauf|war|recht|zwei|dir|worden|Liebe|gewesen|etwas|Seite|gut|Weise|mit|es|anders|sein|das|Mann|Herr|nicht|schon|alle|kommen|dieser|welches|ihnen|oder|alles|nach|waren|während|ohne|viel|den|sich|aber|zwar|weit|wie|wer|dort|haben|bin|heute|ihrer|ihm|ja|ihre|am|welcher|Frau|bis|bei|meine|dich|Leben|zwischen|noch|mir|denn|sollte|Hand|denen|solche|sehen|diese|nun|mich|ersten|einem|die|einer|dieses|sondern|im|dass|deren|hatte|selbst|wird|man|seinen|macht|kein|will|immer|um|hat|mehr|hätte|ist|weiter|durch|machen";
+
+  class TypingTest {
+  constructor(words) {
+    this.words = this.uniqueWords(words);
+    this.timeElapsed = document.getElementById('timeElapsed');
+    this.inputField = document.getElementById('inputField');
+    this.wordsContainer = document.getElementById('wordsContainer');
+    this.resault = document.getElementById('resault');
+    this.reset();
+    this.init();
+  }
+
+  reset(){
+    this.startTime = null;
+    this.endTime = null;
+    this.currentIndex = 0;
+    this.rightWords = 0;
+    this.wrongWords = 0;
+    this.keyHits = 0;
+    this.rightKeys = 0;
+    this.wrongKeys = 0;
+    this.wordsToGenerate = 50;
+    this.clearWordElements();
+  }
+
+  uniqueWords(str) { return Array.from(new Set(str.split('|').filter(word => word.trim() !== '')));}
+
+  shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  createWordElements() {
+    let toGenerate = this.wordsToGenerate;
+    let shuffledWords = this.shuffleArray(this.words);
+    while(toGenerate > 0){
+      let shuffledWords = this.shuffleArray(this.words);
+      for(let word of shuffledWords)
+      {
+        const wordElement = document.createElement('div');
+        wordElement.textContent = word;
+        wordElement.className = 'word';
+        this.wordsContainer.appendChild(wordElement);
+        if(--toGenerate<=0) break;
+      }
+    }
+    this.markCurrentWord();
+  }
+
+  clearWordElements() {
+    this.wordsContainer.innerHTML = '';
+  }
+
+  markCurrentWord() {
+    let currentElement = this.wordsContainer.children[this.currentIndex];
+    if (currentElement) {
+      currentElement.classList.add('current');
+    }
+  }
+
+  nextWord() {
+    let currentWordElement = this.wordsContainer.children[this.currentIndex];
+    if (currentWordElement) {
+      currentWordElement.classList.remove('current');
+      currentWordElement.classList.add('done');
+    }
+    this.currentIndex++;
+    let nextWordElement = this.wordsContainer.children[this.currentIndex];
+    if (nextWordElement) {
+      nextWordElement.classList.add('current');
+      nextWordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }else{
+      this.end();
+    }
+  }
+
+  end(){
+    this.endTime = new Date();
+    clearInterval(this.timer);
+
+    let total = (new Date() - this.startTime) / 1000;
+    let totalKey = this.wrongKeys + this.rightKeys;
+
+
+    let minutes = total / 60;
+    let kpm = totalKey / minutes;
+    let wpm = (this.wrongWords + this.rightWords) / minutes;
+    let res = [];
+
+    res.push(["KPM", kpm]);
+    res.push(["Keys", totalKey]);
+    res.push(["Wrong Keys", this.wrongKeys ]);
+    res.push(["Right Keys", this.rightKeys]);
+    res.push(["Key P", (this.rightKeys / totalKey * 100) + "%" ]);
+    res.push(["WPM", wpm]);
+    res.push(["Wrong Words", this.wrongWords ]);
+    res.push(["Right Words", this.rightWords ]);
+
+    let resText = "";
+
+    for(let xr of res)
+      resText += '<div class="resRow"><div class="resTitle">'+xr[0]+'</div><div class="resValue">'+xr[1]+'</div></div>';
+    this.resault.innerHTML = '<div class="resContainer">'+resText+'</div>';
+  }
+
+  init() {
+    this.inputField.addEventListener('input', (event) => {
+      if (!this.startTime) {
+        this.startTime = new Date();
+        this.timer = setInterval(() => {
+          let total = (new Date() - this.startTime) / 1000;
+          let minutes = Math.floor(total / 60);
+          let seconds = Math.floor(total % 60);
+          this.timeElapsed.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+        }, 1000);
+      }
+      let isWrong = false;
+      let current = this.wordsContainer.querySelector('.current');
+      const currentWord = current.textContent;
+      const checkWord = this.inputField.value.trim();
+      if (checkWord && !currentWord.startsWith(checkWord)) {
+        isWrong = true;
+      }
+      if(event.data && event.data !== ' ' && event.data !== ''){
+        if(isWrong){ this.wrongKeys++; } else { this.rightKeys++; }
+      }
+
+      let endWord = event.data === ' ';
+
+      if (endWord && checkWord !== currentWord) { isWrong = true;}
+
+      if(isWrong){ current.classList.add('wrong'); } else { current.classList.remove('wrong'); }
+
+      if (endWord) {
+        event.preventDefault();
+        if(isWrong){ this.wrongWords++; } else { this.rightWords++; }
+        this.nextWord();
+        this.inputField.value = '';
+      }
+    });
+    this.createWordElements();
+    setTimeout(()=>{ this.inputField.focus(); },100)
+  }
+}
+
+// Usage
+const typingTest = new TypingTest(words);
+</script>
+
+<!-- Settings -->
+<style>
+  #Settings {
+    position: fixed;
+    top: calc(100% - 75px);
+    left: -1px;
+    right:-1px;
+    background-color: rgba(0, 0, 0, 0.25);
+    height:100%;
+    transition: 250ms;
+    backdrop-filter: blur(10px);
+    box-shadow: 10px 0 rgba(0,0,0,0.5);
+  }
+  #SettingsDrawer {
+    background-color: rgba(0, 0, 0, 0.25);
+    text-align: center;
+    font-size: 30px;
+    cursor: pointer;
+  }
+  #SettingsDrawerIcon{
+    transition: 250ms;
+    padding:20px;
+  }
+
+  #Settings.open {
+    top:-1px;
+  }
+  #Settings.open #SettingsDrawerIcon {
+    transform: rotate(180deg);
+  }
+
+</style>
+<div id="Settings">
+  <div id="SettingsDrawer" onclick="openSettings()"><div id="SettingsDrawerIcon">▲</div></div>
+</div>
+<script>
+  function openSettings(){
+    let sett = document.getElementById("Settings");
+
+    if(sett.classList.contains("open")){
+      sett.classList.remove("open")
+    }else{
+      sett.classList.add("open")
+    }
+  }
+
+  //localStorage.setItem('store_name', 'data_name'); 
+  //e.g
+  //localStorage.setItem('name', 'Ahmed');
+
+
+</script>
+</body>
+</html>

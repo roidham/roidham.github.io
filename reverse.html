@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse String</title>
+
+<style>
+html, body{ height: 100%; width:100%; margin: 0; padding:0;}
+
+body {
+  font-family: Arial, sans-serif;
+  align-items: center;
+}
+
+body {
+  background-color: rgb(28, 43, 43);
+}
+
+body, textarea, input, button{
+    color:lightgray;
+  }
+
+  textarea, input, button{
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 30px;
+    background-color: rgba(0,0,0,0.25);
+  }
+
+  button:hover{
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+
+  textarea, input{
+    width: calc(100% - 20px);
+  }
+
+  .pagepadding {
+    padding: 20px;
+  }
+
+  #copybutton{
+    float: right;
+    margin-bottom: calc(0px - 100%);
+    position: relative;
+    top:5px;
+    right: 5px;
+    border-radius: 8px;
+  }
+
+</style>
+
+</head>
+<body>
+    <div class="pagepadding">
+        <h1>Reverse String Utility</h1>
+
+        <label for="inputString">Enter a string:</label><br/>
+        <input type="text" id="inputString" oninput="reverseString()">
+        <button style="display: none;" onclick="reverseString()">Reverse</button>
+        <br/><br/>
+        <label for="reversedString">Reversed String:</label><br/>
+        <button id="copybutton" onclick="copyToClipboard()">📋</button>
+        <textarea id="reversedString" rows="4" cols="50" readonly></textarea>
+
+        <script>
+
+            // Get the textarea element by its ID
+            var textarea = document.getElementById('reversedString');
+
+            function reverseString() {
+                const input = document.getElementById('inputString').value;
+                
+                const regex = /(\p{Emoji}\uFE0F?(?:\u200D\p{Emoji}\uFE0F?)*)/gu;
+                
+                const emojis = [...input.matchAll(regex)].map(match => match[0]).filter(e => e);
+                const reversed = emojis.reverse().join('');
+
+                textarea.value = reversed;
+            }
+
+            function copyToClipboard() {
+                // Select the text inside the textarea
+                textarea.select();
+                textarea.setSelectionRange(0, 99999); // For mobile devices
+
+                // Copy the selected text to the clipboard
+                document.execCommand('copy');
+                textarea.setSelectionRange(0,0)
+            }
+
+        </script>
+    </div>
+</body>
+</html>
