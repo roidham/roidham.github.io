@@ -1,6 +1,8 @@
 class Setting{
-    constructor(key){
+    constructor(key, defaultValue = null){
         this.Key = key;
+        this.defaultValue = defaultValue;
+        if(this.Value === undefined || this.Value === null) this.Value == defaultValue;
     }
 
     get Value() { return this.get(); }
@@ -12,10 +14,10 @@ class Setting{
 
 class IntSetting extends Setting{
     constructor(key, defaultValue = null, minValue = null, maxValue = null ){
-        super(key);
-        this.defaultValue = defaultValue;
+        super(key, defaultValue);
         this.minValue = minValue;
         this.maxValue = maxValue;
+        if(Number.isNaN(this.Value)) this.Value = defaultValue;
     }
 
     get Value() { return parseInt(this.get()); }
@@ -86,7 +88,6 @@ class SettingSlider{
     }
 
     valueChange(value){
-        console.log("update:"+value)
         this.Setting.Value = value;
         this.ValueDisplay.value = this.Setting.Value;
         this.El.value = this.Setting.Value;

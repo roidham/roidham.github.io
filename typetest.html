@@ -6,6 +6,7 @@
 <title>Typing Test</title>
 <link rel="stylesheet" href="src/settings.css">
 <script src="src/settings.js"></script>
+<script src="src/data.js"></script>
 <style>
 
   html, body{ height: 100%; width:100%; margin: 0; padding:0;}
@@ -167,6 +168,8 @@
     this.reset();
   }
 
+  onEnd = undefined;
+
   reset(){
     this.startTime = null;
     this.endTime = null;
@@ -261,6 +264,8 @@
     for(let xr of res)
       resText += '<div class="resRow"><div class="resTitle">'+xr[0]+'</div><div class="resValue">'+xr[1]+'</div></div>';
     this.resault.innerHTML = '<div class="resContainer">'+resText+'</div>';
+
+    if(this.onEnd) this.onEnd(this.startTime, res, this.endTime)
   }
 
   init() {
@@ -322,7 +327,17 @@ const typingTest = new TypingTest(words);
     (v)=>{ arrea.style.maxWidth = v+"px"; }));
   Settings.addSetting("SettingsTestWords", new SettingSlider("How Many Words", new IntSetting("TypeTest_Words", 50, 2, 4000), 
     (v)=>{ typingTest.wordsToGenerate = v; typingTest.reset(); }));
+</script>
 
+
+<script>
+
+  const dbName = "testdb";
+  const historyObjektStoreName = "TypeTestHistory"
+  var data = new SimpleDataStore(dbName, historyObjektStoreName);
+  typingTest.onEnd = (st, res, et) => data.write({at: st, res: res});
+
+  ( async () => { console.log(await data.getAll()); })()
 
 </script>
 </body>
