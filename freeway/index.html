@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Svg</title>
+<style>
+
+  html, body{ height: 100%; width:100%; margin: 0; padding:0;}
+  body { font-family: Arial, sans-serif; align-items: center; background-color: rgb(28, 43, 43); }
+  body { color:lightgray; }
+
+  /* Scrollbar styles */
+  ::-webkit-scrollbar { width: 20px; height: 10px; background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #888; border-radius: 15px; }
+  ::-webkit-scrollbar-thumb:hover { background: #555; }
+  ::-webkit-scrollbar-track { background: transparent; border-radius: 15px; box-shadow: inset 0 0 5px grey; opacity: 0.1; }
+
+</style>
+</head>
+<body>
+ 
+<svg style="position: absolute; top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.2); height:100%;width:100%;">
+  <g id="roads">
+    <path id="road1" d="M 10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80" stroke="black" fill="transparent"/>
+  </g>
+  <g id="overlays">
+
+  </g>
+</svg>
+
+<script>
+var svgn = "http://www.w3.org/2000/svg";
+var overlay = document.getElementById("overlays");
+
+
+class svgEdit{
+  /**
+  * @param {SVGSVGElement}
+  **/
+  constructor(svg){
+    this.SVG = svg;
+    
+    var d = document.getElementsByTagName("path");
+    console.log(d);
+    this.Paths = [];
+    for(var p of d)
+      this.Paths.push(new svgPath(p))
+
+    this.overlay = document.getElementById("overlays");
+    this.drawOverlay();
+  }
+
+  drawOverlay(){
+    for(var p of this.Paths){
+      for(var s of p.Segments){
+        this.drawOverlayLine(s,0,0);
+      }
+    }
+  }
+
+  drawOverlayLine(s,x,y){
+    if(s.Type == "M"){
+
+    }else{
+      var l = document.createElementNS(svgn,"line");
+      l.setAttribute("x1",s.Args[0]);
+      l.setAttribute("y1",s.Args[1]);
+      l.setAttribute("x2",s.Args[2]);
+      l.setAttribute("y2",s.Args[3]);
+      l.style.stroke = "red";
+      this.overlay.appendChild(l);
+    }
+    
+  }
+
+}
+
+class svgPath{
+  /**
+  * @param {SVGPathElement}
+  **/
+  constructor(path){
+    this.Path = path;
+    this.Segments = this.parsePathData(path.getAttribute("d"));
+  }
+
+  parsePathData(d) {
+    const commands = d.match(/[a-zA-Z][^a-zA-Z]*/g);
+    return commands.map(command => {
+        const type = command.charAt(0);
+        const args = command.slice(1).trim().split(/[\s,]+/).map(Number);
+        return new svgPathSegment( type, args );
+    });
+  }
+}
+
+class svgPathSegment{
+  /**
+  * @param {string} type
+  * @param {Array<numbers>} args
+  **/
+  constructor(type, args){
+    this.Type = type;
+    this.Args = args;
+  }
+
+  getLine(){
+
+  }
+}
+
+
+
+/**
+ * @param {SVGPathElement}
+ **/
+  function generateOverlay(road){
+    overlay.innerHTML = "";
+    var d = road.getAttribute("d").replace(",","").replace(",","").split(" ");
+    d = d.map((s)=>{ return parseInt(s);});
+    var l = document.createElementNS(svgn,"line");
+    l.setAttribute("x1",d[1]);
+    l.setAttribute("y1",d[2]);
+    l.setAttribute("x2",d[4]);
+    l.setAttribute("y2",d[5]);
+    l.style.stroke = "red";
+    overlay.appendChild(l);
+
+    var l = document.createElementNS(svgn,"line");
+    l.setAttribute("x1",d[6]);
+    l.setAttribute("y1",d[7]);
+    l.setAttribute("x2",d[8]);
+    l.setAttribute("y2",d[9]);
+    l.style.stroke = "red";
+    overlay.appendChild(l);
+
+    var l = document.createElementNS(svgn,"line");
+    l.setAttribute("x1",d[8]);
+    l.setAttribute("y1",d[9]);
+    l.setAttribute("x2",d[8] + d[8] - d[6]);
+    l.setAttribute("y2",d[9] + d[9] - d[7]);
+    l.style.stroke = "red";
+    overlay.appendChild(l);
+
+    var l = document.createElementNS(svgn,"line");
+    l.setAttribute("x1",d[11]);
+    l.setAttribute("y1",d[12]);
+    l.setAttribute("x2",d[13]);
+    l.setAttribute("y2",d[14]);
+    l.style.stroke = "red";
+    overlay.appendChild(l);
+
+    //console.log(d)
+  }
+
+  //generateOverlay(document.getElementById("road1"));
+
+  /*
+var c = document.createElementNS(svgn,"circle");
+c.setAttribute("cx",10);
+c.setAttribute("cy",10);
+c.setAttribute("r",10);
+c.style = "stroke:red;fill:rgba(0,0,0,0)";
+  overlay.appendChild(c);
+
+  document.onmousemove = (e)=>{
+    //console.log(e)
+  }
+
+  function overlayPoint(){
+
+  }*/
+
+var x = document.getElementById("road1");
+
+var sp = new svgPath(x);
+
+var s = new svgEdit(document.getElementsByTagName("svg"));
+console.log(s);
+</script>
+
+<!-- Settings -->
+  <style>
+    #Settings { position: fixed; top: calc(100% - 75px); left: -1px; right:-1px; background-color: rgba(0, 0, 0, 0.25); height:100%;
+      transition: 250ms; backdrop-filter: blur(10px); box-shadow: 10px 0 rgba(0,0,0,0.5); }
+    #SettingsDrawer { background-color: rgba(0, 0, 0, 0.25); text-align: center; font-size: 30px; cursor: pointer; }
+    #SettingsDrawerIcon{ transition: 250ms; padding:20px; }
+    #Settings.open { top:-1px; }
+    #Settings.open #SettingsDrawerIcon { transform: rotate(180deg); }
+  </style>
+  <div id="Settings">
+    <div id="SettingsDrawer" onclick="openSettings()"><div id="SettingsDrawerIcon">▲</div></div>
+  </div>
+  <script>
+    let sett = document.getElementById("Settings");
+    function openSettings(){
+      if(sett.classList.contains("open")){ sett.classList.remove("open") }else{ sett.classList.add("open") }
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survive</title>
+<style>
+
+  html, body{ height: 100%; width:100%; margin: 0; padding:0;}
+
+  body {
+    font-family: Arial, sans-serif;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: rgb(28, 43, 43);
+  }
+
+  body, #wordsContainer, #inputField, #timer{
+    color:lightgray;
+  }
+
+  #playArea { position:relative; }
+  .player { height: 20px; width: 20px; background-color: black; position:absolute; }
+
+  .enemy { height: 20px; width: 20px; background-color: red; position:absolute; }
+</style>
+</head>
+<body>
+  <div id="playArea"></div>
+<script>
+
+    class actor {
+      get X () { return this.x; }
+      set X (v) { this.x = v; this.updatePos(); }
+      
+      get Y () { return this.y; }
+      set Y (v) { this.y = v; this.updatePos(); }
+      
+      get W () { return this.w; }
+      set W (v) { this.w = v; this.updatePos(); }
+      
+      get H () { return this.h; }
+      set H (v) { this.h = v; this.updatePos(); }
+      
+
+      speed = 0.25;
+      actorname = "actor"
+
+      constructor(){
+            this.el = document.createElement("div");
+            this.x = this.y = 0;
+            this.w = this.h = 20;
+      }
+      init(){
+        this.el.classList.add(this.actorname);
+      }
+      updatePos(){
+          this.el.style.top = this.y + "px";
+          this.el.style.left = this.x + "px";
+
+          this.el.style.height = this.h + "px";
+          this.el.style.width = this.w + "px";
+      }
+      moveTowords(poi){
+        let dx = this.X - poi.X;
+        let dy = this.Y - poi.Y;
+
+        if(dx > 0 ) (this.X -= this.speed);
+        if(dx < 0 ) (this.X += this.speed);
+
+        if(dy > 0 ) (this.Y -= this.speed);
+        if(dy < 0 ) (this.Y += this.speed);
+      }
+
+      isCollidingWith(other) {
+        if (this.x < other.x + other.w &&
+            this.x + this.w > other.x &&
+            this.y < other.y + other.h &&
+            this.y + this.h > other.y) {
+            return true;
+        }
+        return false;
+    }
+
+    detectCollisionAngle(other) {
+        const centerA = { x: this.x + this.w / 2, y: this.y + this.h / 2 };
+        const centerB = { x: other.x + other.w / 2, y: other.y + other.h / 2 };
+
+        const dx = centerB.x - centerA.x;
+        const dy = centerB.y - centerA.y;
+
+        return Math.atan2(dy, dx); // Angle in radians
+    }
+
+    resolveCollision(other) {
+        let angle = this.detectCollisionAngle(other);
+
+        // Determine a collision resolution distance (you can adjust this value)
+        const resolutionDistance = 2;
+
+        // Move the object in the opposite direction of the collision
+        other.x -= resolutionDistance * Math.cos(angle + Math.PI);
+        other.y -= resolutionDistance * Math.sin(angle + Math.PI);
+    }
+
+    }
+
+
+    class player extends actor{
+        constructor(){
+            super();
+            this.actorname = "player";
+            this.init();
+        }
+    }
+
+    class input{
+
+        keymap = {
+          "w" : "pu",
+          "s" : "pd",
+          "d" : "pr",
+          "a" : "pl",
+        }
+
+        /**  @param {player} player */
+        constructor(player){
+            this.actions = [];
+            window.addEventListener('keydown', (e)=>{this.keyPress(e);});
+            window.addEventListener('keyup', (e)=>{this.keyRelease(e);});
+            this.player = player;
+        }
+
+        /**
+         * @param {KeyboardEvent} e
+         */
+        keyPress(e){
+            let a = this.keymap[e.key];
+            if(a && this.actions.indexOf(a) == -1){ this.actions.push(a);}
+        }
+
+        keyRelease(e){
+          let a = this.keymap[e.key];
+            if(a && this.actions.indexOf(a) > -1){ this.actions.splice(this.actions.indexOf(a) , 1);}
+        }
+
+        updateLoop(){
+
+          let pu = this.actions.indexOf("pu") > -1;
+          let pd = this.actions.indexOf("pd") > -1;
+          let pr = this.actions.indexOf("pr") > -1;
+          let pl = this.actions.indexOf("pl") > -1;
+
+          var p = pu + pd + pr + pl;
+          var m = 5 / (p);
+
+          if(pu){ this.player.Y -= m; }
+          if(pd){ this.player.Y += m; }
+          if(pr){ this.player.X += m; }
+          if(pl){ this.player.X -= m; }
+
+        }
+    }
+
+    class camera{
+      constructor(player, playArea){
+        this.player = player;
+        this.area = playArea;
+      }
+      updateLoop(){
+        let poi = [];
+        poi.push(this.player);
+
+        let h = window.innerHeight;
+        let w = window.innerWidth;
+
+        this.area.style.top = ((h/2) - (this.player.Y)) + "px";
+        this.area.style.left = ((w/2) - (this.player.X)) + "px";
+
+      }
+    }
+
+    class enemy extends actor{
+        constructor(){
+            super();
+            this.actorname = "enemy";
+            this.H = 50;
+            this.init();
+        }
+    }
+
+
+    class game {
+
+    enemys = [];
+
+      constructor(){
+        this.pl = new player();
+        this.ix = new input(this.pl);
+        this.pa = document.getElementById("playArea");
+        
+        this.pa.appendChild(this.pl.el);
+        this.c = new camera(this.pl,this.pa);
+
+        this.loop = setInterval(()=>{ this.updateLoop(); }, 25);
+      }
+      updateLoop(){
+        this.ix.updateLoop();
+        this.c.updateLoop();
+
+        this.enemys.forEach(e => {
+          e.moveTowords(this.pl);
+          this.enemys.forEach(e2 => {
+            if(e != e2 && e.isCollidingWith(e2)){
+              e.resolveCollision(e2);
+            }
+          });
+        });
+
+      }
+      addEnemy(){
+        let e = new enemy();
+        this.enemys.push(e);
+        e.X = ( Math.random() * 500 ) ;
+        e.Y = ( Math.random() * 500 ) ;
+        this.pa.appendChild(e.el);
+      }
+    }
+
+var g = new game();
+for(var ea = 0; ea <100; ea++){
+  g.addEnemy();
+}
+
+</script>
+
+<!-- Settings -->
+<style>
+  #Settings {
+    position: fixed;
+    top: calc(100% - 75px);
+    left: -1px;
+    right:-1px;
+    background-color: rgba(0, 0, 0, 0.25);
+    height:100%;
+    transition: 250ms;
+    backdrop-filter: blur(10px);
+    box-shadow: 10px 0 rgba(0,0,0,0.5);
+  }
+  #SettingsDrawer {
+    background-color: rgba(0, 0, 0, 0.25);
+    text-align: center;
+    font-size: 30px;
+    cursor: pointer;
+  }
+  #SettingsDrawerIcon{
+    transition: 250ms;
+    padding:20px;
+  }
+
+  #Settings.open {
+    top:-1px;
+  }
+  #Settings.open #SettingsDrawerIcon {
+    transform: rotate(180deg);
+  }
+
+</style>
+<div id="Settings">
+  <div id="SettingsDrawer" onclick="openSettings()"><div id="SettingsDrawerIcon">▲</div></div>
+</div>
+<script>
+function openSettings(){
+    let sett = document.getElementById("Settings");
+    if(sett.classList.contains("open")){
+        sett.classList.remove("open")
+    }else{
+        sett.classList.add("open")
+    }
+}
+</script>
+</body>
+</html>

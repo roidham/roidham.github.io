@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sodoku</title>
+<style>
+
+  html, body{ height: 100%; width:100%; margin: 0; padding:0;}
+
+  body {
+    font-family: Arial, sans-serif;
+    align-items: center;
+  }
+
+  #testArea {
+    padding:50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body {
+    background-color: rgb(28, 43, 43);
+  }
+
+  body{
+    color:lightgray;
+  }
+
+  #wordsContainer, #inputField, #timer, .resContainer{
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 30px;
+    background-color: rgba(0,0,0,0.25);
+  }
+
+  /* Scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 20px;
+    height: 10px;
+    background: transparent;
+
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 15px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 15px;
+    box-shadow: inset 0 0 5px grey;
+    opacity: 0.1;
+  }
+
+
+
+.scell {
+  display: inline-block;
+  width: calc( 11.1111% - 2px ); 
+  background-color: rgba(0,0,0,0.2);
+  height: calc( 11.111vw - 2px );
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 11vw;
+  text-align: center;
+  line-height: 11vw;
+  cursor: pointer;
+
+  font-size: 5vw;
+}
+
+.scell:hover {
+  display: inline-block;
+  width: calc( 11.1111% - 2px ); 
+  background-color: rgba(255,255,255,0.2);
+  height: calc( 11.111vw - 2px );
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.light { background-color: rgba(0,0,0,0.01);  }
+
+.r2, .r5 {
+  border-bottom: 1px solid rgba(255,255,255,0.9);
+}
+
+.c2, .c5 {
+  border-right: 1px solid rgba(255,255,255,0.9);
+}
+
+.sselect {
+  width: calc( ( 11.1111% - 2px ) * 1.2 ); 
+  height: calc( ( 11.111vw - 2px ) );
+  position: absolute;
+  top: 0;
+}
+
+.sselect .scell {
+  width: calc( ( 11.1111% - 2px ) * 3 ); 
+  height: calc( ( 11.111vw - 2px ) * 0.3 );
+  font-size: 3vw;
+  line-height: 3vw;
+  opacity: 0.5;
+  
+}
+
+.sselect .scell:hover { opacity: 1; background-color: rgba(0,0,0,0.2); }
+
+.scell div { width: 31%; height: 31%; background-color: red; float:left; border-left: 1px solid darkred; border-bottom: 1px solid darkred;}
+
+.scell .nope { background-color: transparent;}
+
+.scell .number { width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); border: none; margin-top: -100%; }
+
+.sselect .scell div {display: none;}
+.sselect .scell .number { width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); border: none; margin-top: 0; display: block; }
+
+</style>
+
+
+
+</head>
+<body>
+  <div id="sodArea"></div>
+<script>
+/**
+ * @property {HTMLElement} container
+ */
+  class sodoku{
+    
+    Cells = [];
+
+/**
+ * @param {HtmlElement}
+ * */
+    constructor(el){
+      this.container = el;
+      this.create();
+      window.addEventListener("resize", ()=>{
+        this.hovercell();
+      })
+    }
+
+    create(){
+
+      for(let y = 0; y < 9; y++){
+        for(let x = 0; x < 9; x++){
+          let c = new cell(this,x,y
+          );
+          this.Cells.push(c);
+
+          this.container.appendChild(c.c);
+          c.c.addEventListener("click",()=>{
+            if(c.number){ c.clearNumber(); }
+            else { this.ccell.setNumber(c.c.innerText); }
+            this.hovercell();
+          })
+
+        }
+      }
+
+      let select = this.select = document.createElement("div");
+      select.classList.add("sselect");
+      var index = 1;
+      for(let y = 0; y < 3; y++){
+      for(let x = 0; x < 3; x++){
+        let c = new cell(this,x,y);
+
+        select.appendChild(c.c);
+        c.setNumber(index++);
+        c.c.addEventListener("click", ()=>{
+          this.ccell.setNumber(c.c.innerText); 
+          this.hovercell();
+        })
+        }
+      }
+
+      document.body.appendChild(select);
+
+      this.container.addEventListener("mousemove",(evv) =>{
+        let x = 0;
+        let y = 0;
+        for(let cs of evv.target.classList){
+          if(cs.startsWith("r")){
+            y = parseInt(cs.replace("r",""));
+          }
+          if(cs.startsWith("c")){
+            x = parseInt(cs.replace("c",""));
+          }
+        }
+
+        for(let c of this.Cells){
+
+          c.c.classList.remove("light");
+
+          if(c.y === y && c.x === x){
+            this.ccell = c;
+          }
+
+          if(c.y === y || c.x === x) c.c.classList.add("light");
+
+        }
+
+        this.hovercell();
+      });
+
+    
+  }
+
+  hovercell(){
+    let bb = this.ccell.c.getBoundingClientRect();
+    this.select.style.top = (bb.top + window.scrollY) + "px";
+    this.select.style.left = (bb.left + window.scrollX) + "px";
+
+    if(this.ccell.number){
+      this.select.style.visibility = "collapse";
+    } else {
+      this.select.style.visibility = "";
+    }
+
+  }
+
+  getBlock(z){
+    let ret = this.Cells.filter((v)=>{ return v.z === z });
+    return ret;
+  }
+
+  getUnusedInBlock(z){
+    let ret = this.getBlock(z).filter((v)=>{ if(v.number) return false; else return true; });
+    return ret;
+  }
+
+}
+
+  class cell {
+
+    prefered = [];
+
+    constructor(main,x,y,z=0,zy=0,zx=0)
+    {
+      this.c = document.createElement("div");
+      this.c.classList.add("scell");
+      this.y = y;
+      this.x = x;
+      this.z = z = parseInt((x / 3)+1) + (3 * parseInt((y / 3)) );
+      this.zx = zx =  (parseInt((y / 3)) );
+      this.zy = zy = parseInt((x / 3));
+      this.c.classList.add("r"+y);
+      this.c.classList.add("c"+x);
+      this.c.classList.add("z"+z);
+      this.c.classList.add("zx"+zx);
+      this.c.classList.add("zy"+zy);
+
+      this.main = main;
+      
+      this.clearNumber();
+
+      //this.setNumber(zy);
+    }
+
+    updateCansetPreview(){
+      if(this.number) return;
+
+      for(let i = 1; i <= 9; i++){
+        if(!this.canSet(i)){
+          this.c.children[i-1].classList.add("nope");
+        } else {
+          this.c.children[i-1].classList.remove("nope");
+        }
+      }
+    }
+
+    clearNumber(){
+      //this.setNumber("&nbsp;");
+      //this.setNumber("");
+      for(let i = 1; i <= 9; i++){
+        let d = document.createElement("div");
+        d.className = "d"+i;
+        this.c.appendChild(d);
+      }
+
+      this.dn = document.createElement("div");
+      this.dn.className="number";
+      this.c.appendChild(this.dn);
+
+      this.setNumber("&nbsp;");
+    }
+
+    setNumber(v){
+      this.dn.innerHTML = v;
+      this.number = parseInt(v);
+      this.setPrefered(v);
+    }
+
+    canSetNumber(v){
+      if(this.canSet(v)){
+         this.setNumber(v);
+         return true;
+        }
+      return false;
+    }
+
+    canSet(v){
+      let val = parseInt(v);
+      for(let c of this.main.Cells){
+        if(c != this.c && c.number){
+          if(c.x === this.x && val == c.number) return false;
+          if(c.y === this.y && val == c.number) return false;
+          if(c.z === this.z && val == c.number) return false; 
+        }
+      }
+      return true;
+    }
+
+    setPrefered(val){
+      for(let c of this.main.Cells){
+
+        if(c.z == this.z || c.zx == this.zx || c.zy == this.zy) c.removePrefered(val);
+
+        if(c.z !== this.c.z){
+          if(c.x !== this.x && c.zx == this.zx) c.updatePrefered(val);
+          if(c.y !== this.y && c.zy == this.zy) c.updatePrefered(val);
+        }
+      }
+    }
+
+    removePrefered(val){
+      const index = this.prefered.indexOf(val);
+      if (index > -1) { // only splice array when item is found
+        this.prefered.splice(index, 1); // 2nd parameter means remove one item only
+      }
+    }
+
+    updatePrefered(val){
+      if(this.canSet(val)) this.prefered.push(val);
+    }
+
+    findBest(){
+      let possible = [1,2,3,4,5,6,7,8,9];
+
+      if(this.prefered.length > 0){
+        let n = this.prefered[Math.floor(Math.random() * this.prefered.length)];
+        if(this.canSetNumber(n)) return;
+
+      }
+      let n = possible[Math.floor(Math.random() * possible.length)];
+      if(this.canSetNumber(n)) return;
+    }
+  }
+ 
+  let s = new sodoku(document.getElementById("sodArea"));
+
+
+let n = 9;
+let b = 1;
+
+let inbe = { n : 0, b : 0, bl : [] };
+
+  let x = setInterval(()=>{
+
+
+        if(inbe.n != n || inbe.b != b){
+          inbe = { n : n, b : b, bl : s.getUnusedInBlock(b) };
+        }
+
+        var bl = inbe.bl;
+
+          let x = bl[Math.floor(Math.random() * bl.length)];
+
+          let didSet = x.canSetNumber(n);
+
+          // can remaining still be set
+          let allSet = true;
+          for(let cc = 1; cc <= 9; cc++){
+
+            let hasNumber = s.getBlock(cc).filter((cv) => { return cv.number && cv.number == inbe.n}).length >= 1;
+            let hasPosebility = s.getBlock(cc).filter((cv) => { return cv.canSet(inbe.n) }).length >= 0;
+
+            if(!hasNumber){
+              allSet = false;
+              if(!hasPosebility){
+                didSet =false;
+                x.clearNumber();
+                break;
+              }
+            }
+          }
+
+          if(!allSet){
+            
+          }
+
+          if(didSet){
+            b++;
+            s.Cells.forEach((c)=>{
+                c.updateCansetPreview();
+              });
+            if(b === 10){
+              b = 1;
+              n--;
+              if(n === 0){
+                clearInterval(x);
+              }
+            }
+            return;
+          }else{
+            bl.splice(bl.indexOf(x),1)
+          }
+          if(bl.length === 0){
+            alert("Nope");
+          }
+
+    
+
+
+    //let cccc = s.Cells.filter((v)=>{ if(v.number) return false; else return true; });
+    //let x = cccc[Math.floor(Math.random() * cccc.length)];
+    //if(!x.number) x.findBest();
+
+
+  },1000);
+
+</script>
+
+<!-- Settings -->
+<style>
+  #Settings {
+    position: fixed;
+    top: calc(100% - 75px);
+    left: -1px;
+    right:-1px;
+    background-color: rgba(0, 0, 0, 0.25);
+    height:100%;
+    transition: 250ms;
+    backdrop-filter: blur(10px);
+    box-shadow: 10px 0 rgba(0,0,0,0.5);
+  }
+  #SettingsDrawer {
+    background-color: rgba(0, 0, 0, 0.25);
+    text-align: center;
+    font-size: 30px;
+    cursor: pointer;
+  }
+  #SettingsDrawerIcon{
+    transition: 250ms;
+    padding:20px;
+  }
+
+  #Settings.open {
+    top:-1px;
+  }
+  #Settings.open #SettingsDrawerIcon {
+    transform: rotate(180deg);
+  }
+
+</style>
+<div id="Settings">
+  <div id="SettingsDrawer" onclick="openSettings()"><div id="SettingsDrawerIcon">▲</div></div>
+</div>
+<script>
+  function openSettings(){
+    let sett = document.getElementById("Settings");
+
+    if(sett.classList.contains("open")){
+      sett.classList.remove("open")
+    }else{
+      sett.classList.add("open")
+    }
+  }
+
+  //localStorage.setItem('store_name', 'data_name'); 
+  //e.g
+  //localStorage.setItem('name', 'Ahmed');
+
+
+</script>
+</body>
+</html>

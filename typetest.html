@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Typing Test</title>
+<link rel="stylesheet" href="src/settings.css">
+<script src="src/settings.js"></script>
 <style>
 
   html, body{ height: 100%; width:100%; margin: 0; padding:0;}
@@ -143,7 +145,7 @@
       <!-- The text to be typed goes here -->
       nichts ich sehr wer einen soll wurden dieses hatten einem welches so mir es schon des gemacht Seite würde wie
     </div>
-    <input type="text" id="inputField" >
+    <input type="text" id="inputField" autocomplete="off" >
     <div id="timer">
       Time: <span id="timeElapsed">0:00</span>
     </div>
@@ -160,21 +162,18 @@
     this.inputField = document.getElementById('inputField');
     this.wordsContainer = document.getElementById('wordsContainer');
     this.resault = document.getElementById('resault');
+    this.wordsToGenerate = 50;
+    this.inputEvent = (event) => this.checkInput(event);
     this.reset();
-    this.init();
   }
 
   reset(){
     this.startTime = null;
     this.endTime = null;
-    this.currentIndex = 0;
-    this.rightWords = 0;
-    this.wrongWords = 0;
-    this.keyHits = 0;
-    this.rightKeys = 0;
-    this.wrongKeys = 0;
-    this.wordsToGenerate = 50;
+    this.currentIndex = this.rightWords = this.wrongWords = this.keyHits = this.rightKeys = this.wrongKeys = 0;
+    this.clearInputField();
     this.clearWordElements();
+    this.init();
   }
 
   uniqueWords(str) { return Array.from(new Set(str.split('|').filter(word => word.trim() !== '')));}
@@ -207,6 +206,10 @@
   clearWordElements() {
     this.wordsContainer.innerHTML = '';
   }
+  clearInputField(){
+    this.inputField.removeEventListener('input', this.inputEvent);
+    this.inputField.value = "";
+  }
 
   markCurrentWord() {
     let currentElement = this.wordsContainer.children[this.currentIndex];
@@ -238,7 +241,6 @@
     let total = (new Date() - this.startTime) / 1000;
     let totalKey = this.wrongKeys + this.rightKeys;
 
-
     let minutes = total / 60;
     let kpm = totalKey / minutes;
     let wpm = (this.wrongWords + this.rightWords) / minutes;
@@ -248,10 +250,11 @@
     res.push(["Keys", totalKey]);
     res.push(["Wrong Keys", this.wrongKeys ]);
     res.push(["Right Keys", this.rightKeys]);
-    res.push(["Key P", (this.rightKeys / totalKey * 100) + "%" ]);
+    res.push(["Key(%)", (this.rightKeys / totalKey * 100)]);
     res.push(["WPM", wpm]);
     res.push(["Wrong Words", this.wrongWords ]);
     res.push(["Right Words", this.rightWords ]);
+    res.push(["Seconds", total ]);
 
     let resText = "";
 
@@ -261,31 +264,32 @@
   }
 
   init() {
-    this.inputField.addEventListener('input', (event) => {
+    this.inputField.addEventListener('input', this.inputEvent);
+    this.createWordElements();
+    setTimeout(()=>{ this.inputField.focus(); },100)
+  }
+
+  updateTime(){
+    let total = (new Date() - this.startTime) / 1000;
+    this.writeTime(Math.floor(total / 60), Math.floor(total % 60));
+  }
+  writeTime(minutes, seconds){ this.timeElapsed.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds; }
+
+  checkInput(event){
       if (!this.startTime) {
         this.startTime = new Date();
-        this.timer = setInterval(() => {
-          let total = (new Date() - this.startTime) / 1000;
-          let minutes = Math.floor(total / 60);
-          let seconds = Math.floor(total % 60);
-          this.timeElapsed.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
-        }, 1000);
+        this.timer = setInterval(() => this.updateTime(), 1000);
       }
-      let isWrong = false;
       let current = this.wordsContainer.querySelector('.current');
-      const currentWord = current.textContent;
       const checkWord = this.inputField.value.trim();
-      if (checkWord && !currentWord.startsWith(checkWord)) {
-        isWrong = true;
-      }
-      if(event.data && event.data !== ' ' && event.data !== ''){
-        if(isWrong){ this.wrongKeys++; } else { this.rightKeys++; }
-      }
-
       let endWord = event.data === ' ';
 
-      if (endWord && checkWord !== currentWord) { isWrong = true;}
+      if(!current){ if(checkWord == "new" && endWord){ this.reset();} return; };
+      const currentWord = current.textContent;
+      let isWrong = checkWord && !currentWord.startsWith(checkWord);
+      if(event.data && event.data !== ' ' && event.data !== ''){ if(isWrong){ this.wrongKeys++; } else { this.rightKeys++; };}
 
+      if (endWord && checkWord !== currentWord) { isWrong = true;}
       if(isWrong){ current.classList.add('wrong'); } else { current.classList.remove('wrong'); }
 
       if (endWord) {
@@ -294,65 +298,30 @@
         this.nextWord();
         this.inputField.value = '';
       }
-    });
-    this.createWordElements();
-    setTimeout(()=>{ this.inputField.focus(); },100)
   }
 }
 
-// Usage
 const typingTest = new TypingTest(words);
 </script>
 
 <!-- Settings -->
-<style>
-  #Settings {
-    position: fixed;
-    top: calc(100% - 75px);
-    left: -1px;
-    right:-1px;
-    background-color: rgba(0, 0, 0, 0.25);
-    height:100%;
-    transition: 250ms;
-    backdrop-filter: blur(10px);
-    box-shadow: 10px 0 rgba(0,0,0,0.5);
-  }
-  #SettingsDrawer {
-    background-color: rgba(0, 0, 0, 0.25);
-    text-align: center;
-    font-size: 30px;
-    cursor: pointer;
-  }
-  #SettingsDrawerIcon{
-    transition: 250ms;
-    padding:20px;
-  }
-
-  #Settings.open {
-    top:-1px;
-  }
-  #Settings.open #SettingsDrawerIcon {
-    transform: rotate(180deg);
-  }
-
-</style>
-<div id="Settings">
-  <div id="SettingsDrawer" onclick="openSettings()"><div id="SettingsDrawerIcon">▲</div></div>
+<div id="SettingsModal">
+  <div id="SettingsDrawer"><div id="SettingsDrawerIcon">▲</div></div>
+  <div id="SettingsGrid">
+    <div class="SettingsHeader">Page Layout</div>
+    <div id="SettingMaxWidth" class="SettingsItem"></div>
+    <div class="SettingsHeader">Type Test Settings</div>
+    <div id="SettingsTestWords" class="SettingsItem"></div>
+  </div>
 </div>
 <script>
-  function openSettings(){
-    let sett = document.getElementById("Settings");
+  var Settings = new SettingsManager(document.getElementById("SettingsModal"),document.getElementById("SettingsDrawer"));
 
-    if(sett.classList.contains("open")){
-      sett.classList.remove("open")
-    }else{
-      sett.classList.add("open")
-    }
-  }
-
-  //localStorage.setItem('store_name', 'data_name'); 
-  //e.g
-  //localStorage.setItem('name', 'Ahmed');
+  let arrea = document.getElementById("testArea");
+  Settings.addSetting("SettingMaxWidth", new SettingSlider("Max Width", new IntSetting("TypeTest_PageMaxWidth", 600, 200, 4000), 
+    (v)=>{ arrea.style.maxWidth = v+"px"; }));
+  Settings.addSetting("SettingsTestWords", new SettingSlider("How Many Words", new IntSetting("TypeTest_Words", 50, 2, 4000), 
+    (v)=>{ typingTest.wordsToGenerate = v; typingTest.reset(); }));
 
 
 </script>
