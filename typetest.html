@@ -157,6 +157,7 @@
   let words = "gar|werde|Menschen|des|sei|uns|damit|kann|weil|hier|dies|der|zum|also|über|dessen|doch|mein|von|lassen|vielleicht|meiner|Jahre|zu|welche|können|einen|müssen|ihn|muss|ganzen|seiner|auf|wurde|dem|Welt|in|beiden|Zeit|erst|wieder|werden|gemacht|da|allen|sagen|ganze|ob|nur|vor|lange|und|wollen|einmal|konnte|sehr|für|wohl|dann|wurden|jetzt|aus|gegen|eben|wir|ganz|diesem|soll|ich|als|einzelnen|ihr|seinem|keine|so|anderen|eine|bald|hatten|an|ihrem|allein|du|eines|ihren|was|nichts|wo|habe|vom|euch|ein|sie|wenn|sind|diesen|seine|unter|auch|er|würde|darauf|war|recht|zwei|dir|worden|Liebe|gewesen|etwas|Seite|gut|Weise|mit|es|anders|sein|das|Mann|Herr|nicht|schon|alle|kommen|dieser|welches|ihnen|oder|alles|nach|waren|während|ohne|viel|den|sich|aber|zwar|weit|wie|wer|dort|haben|bin|heute|ihrer|ihm|ja|ihre|am|welcher|Frau|bis|bei|meine|dich|Leben|zwischen|noch|mir|denn|sollte|Hand|denen|solche|sehen|diese|nun|mich|ersten|einem|die|einer|dieses|sondern|im|dass|deren|hatte|selbst|wird|man|seinen|macht|kein|will|immer|um|hat|mehr|hätte|ist|weiter|durch|machen";
 
   class TypingTest {
+  onEnd = undefined;
   constructor(words) {
     this.words = this.uniqueWords(words);
     this.timeElapsed = document.getElementById('timeElapsed');
@@ -168,8 +169,6 @@
     this.reset();
   }
 
-  onEnd = undefined;
-
   reset(){
     this.startTime = null;
     this.endTime = null;
@@ -177,10 +176,10 @@
     this.clearInputField();
     this.clearWordElements();
     this.init();
+    this.scrollIntoView();
   }
 
   uniqueWords(str) { return Array.from(new Set(str.split('|').filter(word => word.trim() !== '')));}
-
   shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -191,50 +190,29 @@
 
   createWordElements() {
     let toGenerate = this.wordsToGenerate;
-    let shuffledWords = this.shuffleArray(this.words);
+    let wordsElements = ``;
     while(toGenerate > 0){
-      let shuffledWords = this.shuffleArray(this.words);
-      for(let word of shuffledWords)
-      {
-        const wordElement = document.createElement('div');
-        wordElement.textContent = word;
-        wordElement.className = 'word';
-        this.wordsContainer.appendChild(wordElement);
-        if(--toGenerate<=0) break;
-      }
+      this.shuffleArray(this.words).some((word) =>{ if(--toGenerate>=0) wordsElements += `<div class="word">${word}</div>`; });
     }
-    this.markCurrentWord();
+    this.wordsContainer.innerHTML = wordsElements;
+    this.markWordCurrent();
   }
 
-  clearWordElements() {
-    this.wordsContainer.innerHTML = '';
-  }
-  clearInputField(){
-    this.inputField.removeEventListener('input', this.inputEvent);
-    this.inputField.value = "";
-  }
+  clearWordElements() { this.wordsContainer.innerHTML = ''; }
+  clearInputField(){ this.inputField.removeEventListener('input', this.inputEvent); this.inputField.value = ""; }
 
-  markCurrentWord() {
-    let currentElement = this.wordsContainer.children[this.currentIndex];
-    if (currentElement) {
-      currentElement.classList.add('current');
-    }
-  }
+  getWordElement() { return this.wordsContainer.children[this.currentIndex]; }
+  markWordCurrent() { this.getWordElement()?.classList.add('current'); }
+  removeWordCurrent() { this.getWordElement()?.classList.remove('current'); }
+  markWordDone() { this.getWordElement()?.classList.add('done'); }
+  scrollIntoView() { this.getWordElement()?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 
   nextWord() {
-    let currentWordElement = this.wordsContainer.children[this.currentIndex];
-    if (currentWordElement) {
-      currentWordElement.classList.remove('current');
-      currentWordElement.classList.add('done');
-    }
-    this.currentIndex++;
-    let nextWordElement = this.wordsContainer.children[this.currentIndex];
-    if (nextWordElement) {
-      nextWordElement.classList.add('current');
-      nextWordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }else{
-      this.end();
-    }
+    this.removeWordCurrent();
+    this.markWordDone();
+    if(++this.currentIndex == this.wordsContainer.children.length){ this.end(); return; }
+    this.markWordCurrent();
+    this.scrollIntoView();
   }
 
   end(){
@@ -243,27 +221,21 @@
 
     let total = (new Date() - this.startTime) / 1000;
     let totalKey = this.wrongKeys + this.rightKeys;
-
     let minutes = total / 60;
-    let kpm = totalKey / minutes;
-    let wpm = (this.wrongWords + this.rightWords) / minutes;
-    let res = [];
-
-    res.push(["KPM", kpm]);
-    res.push(["Keys", totalKey]);
-    res.push(["Wrong Keys", this.wrongKeys ]);
-    res.push(["Right Keys", this.rightKeys]);
-    res.push(["Key(%)", (this.rightKeys / totalKey * 100)]);
-    res.push(["WPM", wpm]);
-    res.push(["Wrong Words", this.wrongWords ]);
-    res.push(["Right Words", this.rightWords ]);
-    res.push(["Seconds", total ]);
+    let res = [
+      ["KPM", totalKey / minutes],
+      ["Keys", totalKey],
+      ["Wrong Keys", this.wrongKeys],
+      ["Right Keys", this.rightKeys],
+      ["Key(%)", (this.rightKeys / totalKey * 100)],
+      ["WPM", (this.wrongWords + this.rightWords) / minutes],
+      ["Wrong Words", this.wrongWords],
+      ["Right Words", this.rightWords],
+      ["Seconds", total]];
 
     let resText = "";
-
-    for(let xr of res)
-      resText += '<div class="resRow"><div class="resTitle">'+xr[0]+'</div><div class="resValue">'+xr[1]+'</div></div>';
-    this.resault.innerHTML = '<div class="resContainer">'+resText+'</div>';
+    res.forEach(xr => resText += `<div class="resRow"><div class="resTitle">${xr[0]}</div><div class="resValue">${xr[1]}</div></div>`);
+    this.resault.innerHTML =`<div class="resContainer">${resText}</div>`;
 
     if(this.onEnd) this.onEnd(this.startTime, res, this.endTime)
   }
@@ -273,7 +245,6 @@
     this.createWordElements();
     setTimeout(()=>{ this.inputField.focus(); },100)
   }
-
   updateTime(){
     let total = (new Date() - this.startTime) / 1000;
     this.writeTime(Math.floor(total / 60), Math.floor(total % 60));
@@ -328,17 +299,12 @@ const typingTest = new TypingTest(words);
   Settings.addSetting("SettingsTestWords", new SettingSlider("How Many Words", new IntSetting("TypeTest_Words", 50, 2, 4000), 
     (v)=>{ typingTest.wordsToGenerate = v; typingTest.reset(); }));
 </script>
-
-
+<!-- Data -->
 <script>
-
   const dbName = "testdb";
   const historyObjektStoreName = "TypeTestHistory"
   var data = new SimpleDataStore(dbName, historyObjektStoreName);
-  typingTest.onEnd = (st, res, et) => data.write({at: st, res: res});
-
-  ( async () => { console.log(await data.getAll()); })()
-
+  typingTest.onEnd = (st, res, et) => data.write({at: st.getTime(), res: res});
 </script>
 </body>
 </html>
