@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Test</title>
+<link rel="stylesheet" href="src/settings.css">
+<link rel="stylesheet" href="src/scrollbar.css">
+<script src="src/settings.js"></script>
+<script src="src/data.js"></script>
+<style>
+
+  
+
+  html, body{ height: 100%; width:100%; margin: 0; padding:0;}
+
+  body {
+    font-family: Arial, sans-serif;
+    align-items: center;
+  }
+
+  h1 {text-align: center;}
+
+  #testArea {
+    padding:50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body {
+    background-color: rgb(28, 43, 43);
+  }
+
+  body, #chartContainer{
+    color:lightgray;
+  }
+
+  #chartContainer{
+    height: 600px;
+    background: rgba(0,0,0,0.25);
+    margin: 20px;
+    display:grid;
+    gap:1px;
+    grid-auto-flow: column; /* Tells grid to add new items as columns, not rows */
+    grid-auto-columns: 1fr;  /* Optional: makes all columns equal width */
+    border-radius: 20px;
+    overflow: clip;
+    border: 1px solid #ccc;
+  }
+
+  .bar {
+    transition: background-color 0.25s;
+    background-color: rgba(255,255,255,0.25);
+    align-self: end;
+  }
+
+  .bar:hover { background-color: rgba(255,255,255,0.5); }
+
+  /* Resault styles */
+  #resault{
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  .resContainer .resRow {
+    padding: 10px;
+  }  
+  
+  .resContainer .resRow div{
+    width: 50%;
+    display: inline-block;
+  }
+
+  .resContainer .resRow:nth-child(2n) {
+    background-color: rgba(0,0,0,0.25);
+  }
+
+  .resTitle {
+    width: 20%;
+    opacity: 0.5;
+  }
+
+  .resValue {
+    width: 60%;
+  }
+
+  .resContainer{
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 25px;
+    background-color: rgba(0,0,0,0.25);
+    margin: 20px;
+  }
+
+</style>
+</head>
+<body>
+<br/>
+<h1>Typetest Statistic</h1>
+<div id="chartContainer" ></div>
+<div id="resault"></div>
+<script>
+
+    function drawRes(resFull){
+        if(!resFull) return;
+        let date = new Date(resFull.at);
+        let res = [["Datum",date.toLocaleDateString() + " " + date.toLocaleTimeString()]].concat(resFull.res);
+        
+        let resText = "";
+        res.forEach(xr => resText += `<div class="resRow"><div class="resTitle">${xr[0]}</div><div class="resValue">${xr[1]}</div></div>`);
+        this.resault.innerHTML =`<div class="resContainer">${resText}</div>`;
+    }
+
+    async function initChart(){
+        let cont = document.getElementById("chartContainer");
+        var res = await load();
+        var max = 10;
+        res.forEach((el) => { var val = el.res[5][1]; if(val > max) max = val; });
+
+        let els = "";
+        res.forEach((el,i) => { els +=`<div class="bar" data-index="${i}" style="height:${(el.res[5][1] / max) * 100 }%"></div>`; });
+        cont.innerHTML = els;
+        
+        lastIndex = -1;
+        cont.addEventListener("mousemove", (e) =>{
+            var index = e.target.getAttribute("data-index");
+            if(lastIndex != index){
+                if(Number.isNaN(index) || index === null){ this.resault.innerHTML = ""; }
+                else { drawRes(res[index]); }
+                lastIndex = index;
+            }
+        });
+    }
+    document.addEventListener("DOMContentLoaded", () => { initChart(); });
+</script>
+
+<!-- Settings -->
+<div id="SettingsModal">
+<div id="SettingsDrawer"><div id="SettingsDrawerIcon">▲</div></div>
+<div id="SettingsGrid">
+    <div class="SettingsHeader">maybe?</div>
+</div>
+</div>
+<script>
+    
+var Settings = new SettingsManager(document.getElementById("SettingsModal"),document.getElementById("SettingsDrawer"));
+
+</script>
+
+<!-- Data -->
+<script>
+
+const dbName = "testdb";
+const historyObjektStoreName = "TypeTestHistory"
+var data = new SimpleDataStore(dbName, historyObjektStoreName);
+
+async function load() { return await data.getAll(); }
+
+</script>
+</body>
+</html>

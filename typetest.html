@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Typing Test</title>
 <link rel="stylesheet" href="src/settings.css">
+<link rel="stylesheet" href="src/scrollbar.css">
 <script src="src/settings.js"></script>
 <script src="src/data.js"></script>
 <style>
@@ -39,10 +40,10 @@
     background-color: rgba(0,0,0,0.25);
   }
 
-
   #inputField {
     width: 100%;
   }
+  
   #timer {
     width: 100%;
     margin-top: 10px;
@@ -76,22 +77,19 @@
     color: #777;
   }
   .current.wrong {
-    background-color: rgba(153, 21, 21, 0.432); /* Add a red border for incorrect input */
+    background-color: rgba(153, 21, 21, 0.432);
   }
   .done.wrong {
-    color: rgb(54, 33, 33); /* Add a red border for incorrect input */
+    color: rgb(54, 33, 33);
   }
 
-
   /* Resault styles */
-
   #resault{
     margin-top: 10px;
     width: 100%;
   }
 
   .resContainer .resRow {
-    /*width: 100%;*/
     padding: 10px;
   }  
   
@@ -109,34 +107,10 @@
     width: 20%;
     opacity: 0.5;
   }
+
   .resValue {
     width: 60%;
   }
-
-  /* Scrollbar styles */
-  ::-webkit-scrollbar {
-    width: 20px;
-    height: 10px;
-    background: transparent;
-
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 15px;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #555;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 15px;
-    box-shadow: inset 0 0 5px grey;
-    opacity: 0.1;
-  }
-
 
 </style>
 </head>
